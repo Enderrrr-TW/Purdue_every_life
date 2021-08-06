@@ -1,0 +1,12 @@
+[lidar-config]
+path1 = H:\Ender\TJ_test
+path2 = H:\Ender\TJ_test\result
+field_name = field_54m
+field_panel = sbdivtccal
+save_name = LAS_UAV_Field54m_sbdtccal.las
+left_x = 500830.00
+up_y = 4480847.00
+right_x = 500934.00
+bottom_y = 4480737.00
+trim = False
+geocoordinate= False
