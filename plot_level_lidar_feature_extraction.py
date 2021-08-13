@@ -72,7 +72,7 @@ def read_point_cloud(lidardate, datadir, outdir, field_number, field_panel, fiel
     output_file.close()
     return out_path
 
-def extract_row23_point_cloud(dataset_sub, dataset_sub_NG, DEM_x, DEM_y, DEM_z, plot_grid_row23, LEFT_X, TOP_Y, res_extract):
+def extract_row23_point_cloud(dataset_sub, dataset_sub_NG, DEM_x, DEM_y, DEM_z, plot_grid_row23, LEFT_X, TOP_Y, res_extract,plot_ID):
     # add one column to non-ground points, to record relatvie height
     # dataset_sub_NG: x, y, z, intensity,  relative z
     dataset_sub_NG = np.hstack((dataset_sub_NG, np.zeros((len(dataset_sub_NG),1))))
@@ -146,7 +146,6 @@ def main(args):
     configParser = configparser.ConfigParser()   
     configFilePath = config
     configParser.read(configFilePath)
-    
     try:
         working_folder = configParser.get('lidar-config', 'path1') 
         file_list=os.listdir(working_folder)
@@ -176,6 +175,17 @@ def main(args):
     except:
         print('no trim or trim')
         exit()
+
+    try:
+        row_in_plot = configParser.get('lidar-config', 'row_in_plot')
+        plot_ID=configParser.get('lidar-config', 'plot_ID')
+        row_ID=configParser.get('lidar-config', 'row_ID')
+
+    except:
+        print('Use default setting for plot_ID, row_in_plot, and row_ID')
+        plot_ID='plot_ID'
+        row_in_plot='row_in_plot'
+        row_ID=[2,3]
     
     try:
         save_path = configParser.get('lidar-config', 'path2')
@@ -251,8 +261,8 @@ def main(args):
             new_grid['y0'].append(points[i]['geometry']['coordinates'][0][0][1])
             new_grid['x1'].append(points[i]['geometry']['coordinates'][0][2][0])
             new_grid['y1'].append(points[i]['geometry']['coordinates'][0][2][1])
-            new_grid['plot_ID'].append(points[i]['properties']['Plot'])
-            new_grid['row_in_plot'].append(points[i]['properties']['Row_ID'])
+            new_grid['plot_ID'].append(points[i]['properties'][plot_ID])
+            new_grid['row_in_plot'].append(points[i]['properties'][row_in_plot])
         new_grid=pd.DataFrame(new_grid)
         print(new_grid.head())
         # print(new_grid.shape)
@@ -301,8 +311,15 @@ def main(args):
         
         dem_x = np.zeros((num_grid_y,num_grid_x))
         dem_y = np.zeros((num_grid_y,num_grid_x))
-        
-        plot_grid_row23 = new_grid.loc[(new_grid['row_in_plot'] == 2) | (new_grid['row_in_plot'] == 3)]
+        for GG in range(len(row_ID)):
+            if GG==0:
+                indexx=new_grid['row_in_plot'] == row_ID[GG]
+            else:
+                tempp=new_grid['row_in_plot']==row_ID[GG]
+                indexx=np.logical_or(indexx,tempp)
+
+
+        plot_grid_row23 = new_grid.loc[indexx]
         plot_grid_row23 = plot_grid_row23.reset_index(drop=True)
         for j in range(num_grid_y):
             for k in range(num_grid_x):
@@ -311,7 +328,7 @@ def main(args):
         
         NG_lidar_avgH = np.zeros((num_grid_y,num_grid_x, 2))
         points = np.vstack((dem_x.flatten(),dem_y.flatten())).T 
-        
+       
         for j in range(len(PLOT_ID)):
             tupVerts=[(plot_grid_row23['x0'][j*2],plot_grid_row23['y0'][j*2]),     # (1)
                       (plot_grid_row23['x1'][j*2],plot_grid_row23['y0'][j*2]),     # (2)
