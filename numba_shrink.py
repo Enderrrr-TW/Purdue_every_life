@@ -9,7 +9,9 @@ from shapely.geometry import MultiPolygon ,Polygon
 import os
 # cd /d H:\Ender\retangle_shrinking
 #import rectangles
-
+'''
+This script is used to identify plot boundaries.
+'''
 # las=laspy.file.File('20200218_Icrisat1020.las')
 
 @njit()
