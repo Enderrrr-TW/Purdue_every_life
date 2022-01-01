@@ -54,34 +54,6 @@ def inplace_relu(m):
         m.inplace=True
 
 
-def test(model, loader, num_class=40):
-    mean_correct = []
-    class_acc = np.zeros((num_class, 3))
-    classifier = model.eval()
-
-    for j, (points, target) in tqdm(enumerate(loader), total=len(loader)):
-
-        if not args.use_cpu:
-            points, target = points.cuda(), target.cuda()
-
-        points = points.transpose(2, 1)
-        pred, _ = classifier(points)
-        pred_choice = pred.data.max(1)[1]
-
-        for cat in np.unique(target.cpu()):
-            classacc = pred_choice[target == cat].eq(target[target == cat].long().data).cpu().sum()
-            class_acc[cat, 0] += classacc.item() / float(points[target == cat].size()[0])
-            class_acc[cat, 1] += 1
-
-        correct = pred_choice.eq(target.long().data).cpu().sum()
-        mean_correct.append(correct.item() / float(points.size()[0]))
-
-    class_acc[:, 2] = class_acc[:, 0] / class_acc[:, 1]
-    class_acc = np.mean(class_acc[:, 2])
-    instance_acc = np.mean(mean_correct)
-
-    return instance_acc, class_acc
-
 
 def main(args):
     def log_string(str):
@@ -166,8 +138,7 @@ def main(args):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.7)
     global_epoch = 0
     global_step = 0
-    best_instance_acc = 0.0
-    best_class_acc = 0.0
+    best_loss=878787878787
 
     '''TRANING'''
     logger.info('Start training...')
@@ -199,29 +170,17 @@ def main(args):
             optimizer.step()
             global_step += 1
 
-        train_instance_acc = np.mean(mean_correct)
-        log_string('Train Instance Accuracy: %f' % train_instance_acc)
+        log_string('Train loss: %f' % loss)
 
         with torch.no_grad():
-            instance_acc, class_acc = test(classifier.eval(), testDataLoader, num_class=num_class)
-
-            if (instance_acc >= best_instance_acc):
-                best_instance_acc = instance_acc
-                best_epoch = epoch + 1
-
-            if (class_acc >= best_class_acc):
-                best_class_acc = class_acc
-            log_string('Test Instance Accuracy: %f, Class Accuracy: %f' % (instance_acc, class_acc))
-            log_string('Best Instance Accuracy: %f, Class Accuracy: %f' % (best_instance_acc, best_class_acc))
-
-            if (instance_acc >= best_instance_acc):
+            if (loss <= best_loss):
                 logger.info('Save model...')
                 savepath = str(checkpoints_dir) + '/best_model.pth'
+                best_epoch = epoch + 1
                 log_string('Saving at %s' % savepath)
                 state = {
                     'epoch': best_epoch,
-                    'instance_acc': instance_acc,
-                    'class_acc': class_acc,
+                    'loss' : best_loss,
                     'model_state_dict': classifier.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                 }
