@@ -1,1 +1,1 @@
-This folder is used to store codes related to estimating leaf area index (LAI), which is a phenotype in ag science.
+This folder is used to store codes applying PointNet to estiamte leaf area index (LAI), which is a phenotype in ag science, from 3D data (point cloud).
