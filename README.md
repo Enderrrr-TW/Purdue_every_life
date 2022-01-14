@@ -2,5 +2,5 @@
 
 Code when working at Purdue
 
-Machine Learning: Please visit "LAI" \n
+Machine Learning: Please visit "LAI"  
 Photogrammetry: Please visit "Photogrammetry"
