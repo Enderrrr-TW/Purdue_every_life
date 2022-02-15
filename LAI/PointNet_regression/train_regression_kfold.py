@@ -220,7 +220,7 @@ def main(args):
                     points = points.transpose(2, 1).to(torch.float)
                     predv, _ = classifier(points)
                     torch_valid_loss=criterion(predv,targetv,trans_feat)
-                    total_loss=total_loss+torch_valid_loss.mean()*len(target)
+                    total_loss=total_loss+torch_valid_loss.mean()*len(targetv)
                     n+=len(targetv)
                 res=np.array(res).flatten()
                 total_loss=total_loss/n
