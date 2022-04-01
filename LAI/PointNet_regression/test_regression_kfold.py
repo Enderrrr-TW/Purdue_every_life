@@ -8,13 +8,17 @@ Date: Dec 31 2021
 Purpose: Create a script for regression
 """
 from tkinter.tix import Tree
+import json
+import pandas as pd
 from parso import parse
 from data_utils.xyzloader import LASDataLoader_kfold
+from collections import Counter
 import argparse
 import numpy as np
 import os
 import torch
 import matplotlib.pyplot as plt
+import re
 import logging
 from tqdm import tqdm
 import sys
@@ -47,7 +51,22 @@ def parse_args():
     return parser.parse_args()
 
 
-def test(model,loader):
+def test(model,loader,fold):
+    fold_path=f'/home/tirgan/a/huan1577/Pointnet_Pointnet2_pytorch/data/UAV/HIPS_2021/10fold_hi/train_test_split_fold{fold}.json'
+    with open(fold_path,'r') as f:
+        data_dict=json.load(f)
+    dates=[]
+    for i in range(len(data_dict['test']['path'])):
+        dates.append(int(re.split('/',data_dict['test']['path'][i])[10]))
+    a=Counter(dates)
+    num_data=a[20210730]
+    df=dict()
+    df['MSE']=[]
+    df['R2']=[]
+
+    date_list=list(set(dates))
+    date_list.sort()
+    df['date']=date_list
     for m in model.modules():
         for child in m.children():
             if type(child) == torch.nn.BatchNorm1d:
@@ -75,7 +94,6 @@ def test(model,loader):
             n+=len(target)
             pred2=pred.to('cpu').numpy()
             pred2=pred2.flatten()
-    
             target2=target.to('cpu').numpy()
             for i in range(len(pred2)):
                 pred_all.append(pred2[i])
@@ -88,6 +106,23 @@ def test(model,loader):
         plt.savefig('scatter_train.png')
         R2=r2_score(target_all,pred_all)
         state_dict=classifier.state_dict()
+        '''Compute MSE for each date'''
+        for i in range(len(date_list)):
+            begin=i*num_data
+            end=(i+1)*num_data
+            est=[]
+            tru=[]
+            # print(begin,end)
+            for g in range(begin,end):
+                est.append(pred_all[g])
+                tru.append(data_dict['test']['LAI'][g])
+            # print(est)
+            # print(tru)
+            df['MSE'].append(skMSE(tru,est))
+            df['R2'].append(r2_score(tru,est))
+
+        df=pd.DataFrame(df)
+        print(df.head(10))
         return loss, R2, state_dict
 
 
@@ -116,11 +151,13 @@ def main(args):
 
     '''DATA LOADING'''
     log_string('Load dataset ...')
-    data_path = 'remember to change this'
 
     test_dataset = LASDataLoader_kfold(data=args.data,fold=args.fold, split='test', preprocessed=True)
     testDataLoader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=10)
+    ###
 
+    
+    ###
     '''MODEL LOADING'''
     num_class = 1
     model_name = os.listdir(experiment_dir + '/logs')[0].split('.')[0]
@@ -139,12 +176,19 @@ def main(args):
     classifier.load_state_dict(checkpoint['model_state_dict'])
 
     with torch.no_grad():
-        test_loss,test_R2,test_state_dict = test(classifier.eval(), testDataLoader)
+        test_loss,test_R2,test_state_dict = test(classifier.eval(), testDataLoader,args.fold)
         log_string('Test mean squared error: %f' % (test_loss))
+        log_string('Test overall R2: %f' % (test_R2))
 
     return test_loss, test_R2
 
 if __name__ == '__main__':
     args = parse_args()
+    loss_list=[]
+    R2_list=[]
     [loss,R2]=main(args)
+    loss_list.append(loss)
+    R2_list.append(R2)
 
+    # print('loss:', np.mean(loss_list))
+    # print('R**2:', np.mean(R2_list))
