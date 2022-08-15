@@ -2,3 +2,4 @@ The codes in this folder are revised from yanx27's repo: https://github.com/yanx
 I convert the classifcation network into regression network.
 - Use farthest point sampling to extract the same amount of points from each plot collected on different dates
 - Use train_test_split.ipynb to prepare the json files for 10 fold cross validation.
+- There are various versions for training. I used train_test at the end.
