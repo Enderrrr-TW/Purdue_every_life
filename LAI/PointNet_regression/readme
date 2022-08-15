@@ -1,2 +1,4 @@
 The codes in this folder are revised from yanx27's repo: https://github.com/yanx27/Pointnet_Pointnet2_pytorch.
 I convert the classifcation network into regression network.
+- Use farthest point sampling to extract the same amount of points from each plot collected on different dates
+- Use
