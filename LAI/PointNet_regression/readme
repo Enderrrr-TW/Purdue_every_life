@@ -1,5 +1,5 @@
 The codes in this folder are revised from yanx27's repo: https://github.com/yanx27/Pointnet_Pointnet2_pytorch.
 I convert the classifcation network into regression network.
 - Use farthest point sampling to extract the same amount of points from each plot collected on different dates
-- Use train_test_split.ipynb to prepare the json files for 10 fold cross validation.
+- Use train_test_split.ipynb to prepare the json files for 10 fold cross validation. You need to get the plot id in each fold from ./Check_variety.ipynb
 - There are various versions for training. I used train_test at the end.
